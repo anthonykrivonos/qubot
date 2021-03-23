@@ -1,8 +1,12 @@
-from typing import Tuple, List, Set, Optional, Dict
+from typing import Tuple, List, Set, Optional, Dict, Callable
 from hashlib import sha256
-
 from selenium.webdriver.firefox.webelement import FirefoxWebElement
-from .ui_action import UIAction
+from sys import path
+from os.path import join, dirname
+path.append(join(dirname(__file__), '../..'))
+
+from qubot.ui.ui_action import UIAction
+from qubot.utils.input_generation import is_generatable_input
 
 class UITreeNode:
     """
@@ -18,6 +22,7 @@ class UITreeNode:
         self.__html_class = self.__element.get_attribute("class")
         self.__hash = sha256(self.__content.encode('utf-8')).hexdigest()
         self.__transitions = {}
+        self.__visit_count = 0
         self.__is_terminal = is_terminal  # is this a terminal state?
         self.__parent = parent
 
@@ -26,7 +31,7 @@ class UITreeNode:
             if UIAction.LEFT_CLICK not in self.__transitions:
                 self.__transitions[UIAction.LEFT_CLICK] = []
             self.__transitions[UIAction.LEFT_CLICK].append(UITreeNode(element, parent=self))
-        elif element.tag_name in ["input", "textarea"]:
+        elif is_generatable_input(element):
             if UIAction.INPUT not in self.__transitions:
                 self.__transitions[UIAction.INPUT] = []
             self.__transitions[UIAction.INPUT].append(UITreeNode(element, parent=self))
@@ -73,11 +78,23 @@ class UITreeNode:
     def get_content(self) -> str:
         return self.__content
 
+    def get_visits(self) -> int:
+        return self.__visit_count
+
     def set_terminal(self, is_terminal: bool):
         self.__is_terminal = is_terminal
 
     def is_terminal(self) -> bool:
         return self.__is_terminal
+
+    def increment_visits(self):
+        self.__visit_count += 1
+
+    def decrement_visits(self):
+        self.__visit_count -= 1
+
+    def set_visits(self, visit_count: int):
+        self.__visit_count = visit_count
 
     def __str__(self):
         return "<%s id=\"%s\" class=\"%s\"> (%s)" % (self.__tag_name, self.__html_id, self.__html_class, self.__id)
@@ -198,6 +215,18 @@ class UITree:
                     visit_queue.append(child)
 
         return None
+
+    def for_each_pair(self, func: Callable[[UIAction, UITreeNode], None]):
+        visited_nodes = set()
+
+        def visit_dfs(action: UIAction, node: UITreeNode):
+            func(action, node)
+            for child_act, child_node in node.get_transition_tuples():
+                if child_node.get_id() not in visited_nodes:
+                    visited_nodes.add(child_node.get_id())
+                    visit_dfs(child_act, child_node)
+
+        visit_dfs(UIAction.NAVIGATE, self.__root)
 
     def print(self):
         def print_node(action: UIAction, node: UITreeNode, depth: int):

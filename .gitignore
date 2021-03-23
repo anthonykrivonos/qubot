@@ -2,3 +2,9 @@
 geckodriver.log
 .idea
 __pycache__
+*stats.json
+.eggs
+build
+dist
+*.egg-info
+*.pyc

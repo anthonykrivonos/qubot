@@ -1,14 +1,22 @@
 import numpy as np
-from random import uniform, choice
-
+from random import uniform
 from typing import Callable, List, Tuple, Optional
+from sys import path
+from os.path import join, dirname
+path.append(join(dirname(__file__), '../..'))
 
-from qubot.ui import UIAction, UITree, UITreeNode
-from .environment import Environment
+from qubot.ui.ui_action import UIAction
+from qubot.ui.ui_tree import UITree, UITreeNode
+from qubot.environment.environment import Environment
 
 
 class QLearningEnvironment(Environment):
     EPSILON_RANGE = (0.01, 1.0)
+
+    STAT_TRAINING_REWARDS = "training_rewards"
+    STAT_EPSILON_HISTORY = "epsilon_history"
+    STAT_TESTING_REWARDS = "testing_rewards"
+    STAT_TESTING_PENALTIES = "testing_penalties"
 
     def __init__(self, tree: UITree, reward_func: Callable[[UIAction, UITreeNode], int], alpha: float, gamma: float,
                  epsilon: float, decay: float = 0.1, step_limit=1000):
@@ -19,10 +27,10 @@ class QLearningEnvironment(Environment):
         self.__epsilon = epsilon
         self.__decay = decay
         self.__Q = np.zeros((self.observation_space.n, self.action_space.n))
-        self.__training_rewards = []
-        self.__epsilon_history = []
-        self.__testing_rewards = []
-        self.__testing_penalties = []
+        self._stats.empty_events(QLearningEnvironment.STAT_TRAINING_REWARDS)
+        self._stats.empty_events(QLearningEnvironment.STAT_EPSILON_HISTORY)
+        self._stats.empty_events(QLearningEnvironment.STAT_TESTING_REWARDS)
+        self._stats.empty_events(QLearningEnvironment.STAT_TESTING_PENALTIES)
 
     def train(self, episode_count: int):
         print("Training on %d episodes..." % episode_count)
@@ -32,6 +40,7 @@ class QLearningEnvironment(Environment):
             for step in range(self._step_limit):
                 state_embedding = self.get_state_embedding()
                 action, node_action = self.__get_next_transition()
+                node_action.increment_visits()
 
                 new_state_embedding, reward, done, info = self.step((action, node_action))
 
@@ -45,8 +54,8 @@ class QLearningEnvironment(Environment):
                 if done or step == self._step_limit - 1:
                     self.__update_epsilon(episode)
 
-                    self.__training_rewards.append(total_training_rewards)
-                    self.__epsilon_history.append(self.__epsilon)
+                    self._stats.record(QLearningEnvironment.STAT_TRAINING_REWARDS, total_training_rewards)
+                    self._stats.record(QLearningEnvironment.STAT_EPSILON_HISTORY, self.__epsilon)
 
                     break
         print("Training done.")
@@ -60,6 +69,7 @@ class QLearningEnvironment(Environment):
 
             for step in range(self._step_limit):
                 action, node_action = self.__get_next_transition()
+                node_action.increment_visits()
 
                 new_state_embedding, reward, done, info = self.step((action, node_action))
 
@@ -70,9 +80,8 @@ class QLearningEnvironment(Environment):
                     total_testing_penalty += 1
 
                 if done or step == self._step_limit - 1:
-                    # print("E%8d: (reward: %d, penalty: %d, # steps: %d)" % (episode + 1, total_testing_rewards, total_testing_penalty, step + 1))
-                    self.__testing_rewards.append(total_testing_rewards)
-                    self.__testing_penalties.append(total_testing_penalty)
+                    self._stats.record(QLearningEnvironment.STAT_TESTING_REWARDS, total_testing_rewards)
+                    self._stats.record(QLearningEnvironment.STAT_TESTING_PENALTIES, total_testing_penalty)
 
                     break
         print("Testing done.")
@@ -81,47 +90,49 @@ class QLearningEnvironment(Environment):
         print("=============================")
         print("Q-learning agent")
         print("=============================")
-        print("Steps:                 % 6d" % self._step_count)
+        print("Steps:                 % 6d" % self._stats.get(QLearningEnvironment.STAT_STEP_COUNT))
         print("Alpha:                % 1.4f" % self.__alpha)
         print("Gamma:                % 1.4f" % self.__gamma)
         print("Original epsilon:     % 1.4f" % self.__original_epsilon)
         print("Current epsilon:      % 1.4f" % self.__epsilon)
         print("Decay:                % 1.4f" % self.__decay)
-        print("Training rewards:      % 6d" % sum(self.__training_rewards))
-        print("Training score:       % 1.4f" % (0 if not self.__training_rewards else float(sum(self.__training_rewards) / len(self.__training_rewards))))
-        print("Testing rewards:       % 6d" % sum(self.__testing_rewards))
-        print("Testing score:        % 1.4f" % (0 if not self.__testing_rewards else float(sum(self.__testing_rewards) / len(self.__testing_rewards))))
-        print("Testing penalties:     % 6d" % sum(self.__testing_penalties))
-        print("Testing penalty rate: % 1.4f" % (0 if not self.__testing_penalties else float(sum(self.__testing_penalties) / len(self.__testing_penalties))))
+        print("Training rewards:      % 6d" % sum(self.get_training_rewards_history()))
+        print("Training score:       % 1.4f" % (0 if not self.get_training_rewards_history() else float(sum(self.get_training_rewards_history()) / len(self.get_training_rewards_history()))))
+        print("Testing rewards:       % 6d" % sum(self.get_testing_rewards_history()))
+        print("Testing score:        % 1.4f" % (0 if not self.get_testing_rewards_history() else float(sum(self.get_testing_rewards_history()) / len(self.get_testing_rewards_history()))))
+        print("Testing penalties:     % 6d" % sum(self.get_testing_penalties_history()))
+        print("Testing penalty rate: % 1.4f" % (0 if not self.get_testing_penalties_history() else float(sum(self.get_testing_penalties_history()) / len(self.get_testing_penalties_history()))))
 
     def reset(self):
-        self.__training_rewards = []
-        self.__epsilon_history = []
-        self.__testing_rewards = []
-        self.__testing_penalties = []
+        self._stats.empty_events(QLearningEnvironment.STAT_TRAINING_REWARDS)
+        self._stats.empty_events(QLearningEnvironment.STAT_EPSILON_HISTORY)
+        self._stats.empty_events(QLearningEnvironment.STAT_TESTING_REWARDS)
+        self._stats.empty_events(QLearningEnvironment.STAT_TESTING_PENALTIES)
         self.__epsilon = self.__original_epsilon
+        self._tree.for_each_pair(lambda _, node: node.set_visits(0))
         return super().reset()
 
     def get_training_rewards_history(self) -> List[int]:
-        return self.__training_rewards
+        return self._stats.get(QLearningEnvironment.STAT_TRAINING_REWARDS)
 
     def get_testing_rewards_history(self) -> List[int]:
-        return self.__testing_rewards
+        return self._stats.get(QLearningEnvironment.STAT_TESTING_REWARDS)
 
     def get_testing_penalties_history(self) -> List[int]:
-        return self.__testing_penalties
+        return self._stats.get(QLearningEnvironment.STAT_TESTING_PENALTIES)
 
     def get_epsilon_history(self) -> List[float]:
-        return self.__epsilon_history
+        return self._stats.get(QLearningEnvironment.STAT_EPSILON_HISTORY)
 
     def __soft_reset(self):
         self._current_node = self._tree.get_root()
         self.__history = {}
         for node_hash in self._tree.get_hash():
             self.__history[node_hash] = {}
+        self._tree.for_each_pair(lambda _, node: node.set_visits(0))
         return self._current_node
 
-    def __get_exploitive_transition_tuple(self) -> Tuple[Optional[UIAction], Optional[UITreeNode]]:
+    def __get_exploitative_transition_tuple(self) -> Tuple[Optional[UIAction], Optional[UITreeNode]]:
         state = self.get_state()
         state_embedding = self.get_state_embedding()
 
@@ -142,7 +153,7 @@ class QLearningEnvironment(Environment):
         action, node_action = None, None
         if exp_tradeoff >= self.__epsilon:
             # Exploitative action
-            action, node_action = self.__get_exploitive_transition_tuple()
+            action, node_action = self.__get_exploitative_transition_tuple()
             if action is None:
                 exp_tradeoff = self.__epsilon - 1  # workaround to get to next if-condition
 
