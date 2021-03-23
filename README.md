@@ -8,7 +8,7 @@ Qubot was created out of inspiration to create a fully autonomous testing bot to
 QA-tester.
 
 See [the Qubot paper](docs/qubot_paper.pdf) to learn more about the design decisions and the Q-learning approach behind
-this repository. Moreover, see [experiments.ipynb](experiments.ipynb) for the experiment
+this repository. Moreover, see [experiments.ipynb](tests/experiments.ipynb) for the experiment
 mentioned in paper.
 
 Hours of painstaking work have been put into this project thus far, and we hope this
@@ -20,6 +20,9 @@ To get started with Qubot, simply download the library into your project's repos
 ```
 pip install qubot
 ```
+
+This will download all necessary dependencies, as well as install the `qubot` command line program
+in your current Python environment.
 
 #### Run Programmatically
 
@@ -126,7 +129,7 @@ Shorten the Qubot setup code by adding a Qubot configuration `JSON` file in the 
 	},
 	"reward_func": 3,
 	"input_values": {
-		"color": "#000000",
+        "color": "#000000",
         "date": "2021-01-01",
         "datetime-local": "2021-01-01T01:00",
         "email": "johndoe@gmail.com",
@@ -246,7 +249,7 @@ Statistics have no defined shape, but generally look like the following:
 [Portfolio](https://anthonykrivonos.com) | [GitHub](https://github.com/anthonykrivonos)
 
 <b>Kenneth Chuen</b> <br/>
-[Portfolio](https://anthonykrivonos.com) | [GitHub](https://github.com/kenkenchuen)
+[GitHub](https://github.com/kenkenchuen)
 
-Created for the [COMSE6156 - Topics in Software Engineering](https://www.coursicle.com/columbia/courses/COMS/E6156/) course at Columbia University
-in Spring 2021.
+Created for the [COMSE6156 - Topics in Software Engineering](https://www.coursicle.com/columbia/courses/COMS/E6156/)
+course at Columbia University in Spring 2021.

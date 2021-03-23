@@ -32,17 +32,17 @@
 	"reward_func": 3,
 	"input_values": {
 		"color": "#000000",
-        "date": "2021-01-01",
-        "datetime-local": "2021-01-01T01:00",
-        "email": "johndoe@gmail.com",
-        "month": "2021-01",
-        "number": "1",
-        "password": "p@ssw0rd",
-        "search": "query",
-        "tel": "123-456-7890",
-        "text": "text",
-        "time":  "00:00:00.00",
-        "url": "https://www.google.com/",
-        "week": "2021-W01"
+		"date": "2021-01-01",
+		"datetime-local": "2021-01-01T01:00",
+		"email": "johndoe@gmail.com",
+		"month": "2021-01",
+		"number": "1",
+		"password": "p@ssw0rd",
+		"search": "query",
+		"tel": "123-456-7890",
+		"text": "text",
+		"time":  "00:00:00.00",
+		"url": "https://www.google.com/",
+		"week": "2021-W01"
 	}
 }
