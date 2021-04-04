@@ -26,7 +26,7 @@ class Driver:
     STAT_CRASH_DETECTED = "crash_detected"
 
     def __init__(self, input_values: Dict[str, str] = None, use_cache=True):
-        geckodriver_autoinstaller.install()
+        inline_try(lambda: geckodriver_autoinstaller.install())
         self.__driver = webdriver.Firefox()
         self.__input_values = input_values
         self.__stats = Stats(str(self.__class__))
