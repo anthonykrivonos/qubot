@@ -8,7 +8,7 @@ with open("./requirements.txt") as req_file:
 
 setup(
     name='qubot',
-    version='0.0.4',
+    version='0.0.5',
     python_requires=">=3.7",
     packages=find_packages(exclude=["tests", "examples", "docs"]),
     url='https://github.com/anthonykrivonos/qubot',
