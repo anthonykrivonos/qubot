@@ -202,11 +202,11 @@ class UITree:
         while visit_queue:
             node = visit_queue.pop(0)
 
-            if html_id and node.get_html_id() == html_id:
+            if html_id and node.get_html_id() and html_id.lower() in node.get_html_id().lower():
                 return node
-            elif html_class and node.get_html_class() == html_class:
+            elif html_class and node.get_html_class() and html_class.lower() in node.get_html_class().lower():
                 return node
-            elif contains_text and contains_text in node.get_content():
+            elif contains_text and node.get_content() and contains_text.lower() in node.get_content().lower():
                 return node
 
             for _, child in node.get_transition_tuples():

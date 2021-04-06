@@ -60,6 +60,15 @@ def penalize_repeat_visits(action: UIAction, node: UITreeNode):
         return LARGE_PENALTY
     return encourage_exploration(action, node)
 
+def encourage_success(action: UIAction, node: UITreeNode):
+    if node.is_terminal():
+        return LARGE_REWARD
+    elif not node.get_children():
+        return SMALL_PENALTY
+    elif action == UIAction.LEFT_CLICK:
+        return MEDIUM_REWARD
+    return NO_REWARD
+
 class QubotPresetRewardFunc(Enum):
     ENCOURAGE_EXPLORATION = encourage_exploration
     DISCOURAGE_EXPLORATION = discourage_exploration
@@ -67,6 +76,7 @@ class QubotPresetRewardFunc(Enum):
     HEAVILY_DISCOURAGE_EXPLORATION = heavily_discourage_exploration
     REWARD_REPEAT_VISITS = reward_repeat_visits
     PENALIZE_REPEAT_VISITS = penalize_repeat_visits
+    ENCOURAGE_SUCCESS = encourage_success
 
 int_to_reward_func = {
     1: QubotPresetRewardFunc.ENCOURAGE_EXPLORATION,
@@ -75,6 +85,7 @@ int_to_reward_func = {
     4: QubotPresetRewardFunc.HEAVILY_DISCOURAGE_EXPLORATION,
     5: QubotPresetRewardFunc.REWARD_REPEAT_VISITS,
     6: QubotPresetRewardFunc.PENALIZE_REPEAT_VISITS,
+    7: QubotPresetRewardFunc.ENCOURAGE_SUCCESS,
 }
 
 str_to_reward_func = {
@@ -84,4 +95,5 @@ str_to_reward_func = {
     "HEAVILY_DISCOURAGE_EXPLORATION": QubotPresetRewardFunc.HEAVILY_DISCOURAGE_EXPLORATION,
     "REWARD_REPEAT_VISITS": QubotPresetRewardFunc.REWARD_REPEAT_VISITS,
     "PENALIZE_REPEAT_VISITS": QubotPresetRewardFunc.PENALIZE_REPEAT_VISITS,
+    "ENCOURAGE_SUCCESS": QubotPresetRewardFunc.ENCOURAGE_SUCCESS,
 }
