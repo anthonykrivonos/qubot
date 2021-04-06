@@ -70,6 +70,9 @@ class Qubot:
         if verbose:
             self.__env.render()
 
+    def get_env(self) -> QLearningEnvironment:
+        return self.__env
+
     def get_stats(self) -> Stats:
         return self.__stats.merge(self.__driver.get_stats().merge(self.__env.get_stats()))
 
@@ -94,7 +97,7 @@ class Qubot:
     def set_driver_config(self, driver_params: QubotDriverParameters = None, input_values: Dict[str, str] = None):
         self.__driver_info = driver_params if driver_params is not None else self.__driver_info
         self.__input_values = input_values if input_values is not None else self.__input_values
-        if driver_params is not None and input_values is not None:
+        if driver_params is not None or input_values is not None:
             self.__stats.start_timer(Qubot.STAT_CONSTRUCT_UI_TREE_TIME)
             self.__driver = Driver(self.__input_values, use_cache=self.__driver_info.use_cache)
             self.__tree = self.__driver.construct_tree(self.__url_to_test, deep=True,
@@ -104,7 +107,7 @@ class Qubot:
     def set_model_config(self, model_params: Optional[QubotConfigModelParameters] = None, reward_func: Optional[QubotPresetRewardFunc] = None):
         self.__model_info = model_params if model_params is not None else self.__model_info
         self.__reward_func = reward_func if reward_func is not None else self.__reward_func
-        if model_params is not None and reward_func is not None:
+        if model_params is not None or reward_func is not None:
             self.__env = QLearningEnvironment(
                 self.__tree,
                 self.__reward_func,
