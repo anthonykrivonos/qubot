@@ -32,11 +32,16 @@ class Driver:
         self.__stats = Stats(str(self.__class__))
         self.__use_cache = use_cache
         self.__last_tree = None
+        self.__did_visit = False
 
     def open(self, url: str):
         self.__driver.get(url)
 
     def construct_tree(self, url: str = None, deep=True, max_urls_to_visit=10) -> UITree:
+        if self.__did_visit:
+            self.__driver = webdriver.Firefox()
+            self.__did_visit = False
+
         visited_urls: Set[str] = set()
 
         def on_url_visit():
@@ -61,6 +66,9 @@ class Driver:
                 #     on_url_visit()
             else:
                 on_url_visit()
+
+        self.__driver.quit()
+        self.__did_visit = True
 
         return self.__last_tree
 
