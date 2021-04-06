@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, Optional
 from copy import copy, deepcopy
 from sys import path
 import os
@@ -24,12 +24,13 @@ class Qubot:
         self.__terminal_info_training = terminal_info_training if terminal_info_training is not None else copy(terminal_info_testing)
         self.__driver_info = driver_params if driver_params is not None else QubotDriverParameters()
         self.__model_info = model_params if model_params is not None else QubotConfigModelParameters()
+        self.__input_values = input_values
 
-        self.__driver = Driver(input_values, use_cache=self.__driver_info.use_cache)
+        self.__driver = Driver(self.__input_values, use_cache=self.__driver_info.use_cache)
         self.__stats = Stats(str(self.__class__))
 
         self.__stats.start_timer(Qubot.STAT_CONSTRUCT_UI_TREE_TIME)
-        self.__tree = self.__driver.construct_tree(url_to_test, deep=True, max_urls_to_visit=self.__driver_info.max_urls)
+        self.__tree = self.__driver.construct_tree(self.__url_to_test, deep=True, max_urls_to_visit=self.__driver_info.max_urls)
         self.__stats.stop_timer(Qubot.STAT_CONSTRUCT_UI_TREE_TIME)
 
         self.__reward_func = reward_func
@@ -89,6 +90,30 @@ class Qubot:
             testing_func(html_class=terminal_html_class)
         for terminal_contains_test in self.__terminal_info_testing.terminal_contains_text:
             testing_func(contains_text=terminal_contains_test)
+
+    def set_driver_config(self, driver_params: QubotDriverParameters = None, input_values: Dict[str, str] = None):
+        self.__driver_info = driver_params if driver_params is not None else self.__driver_info
+        self.__input_values = input_values if input_values is not None else self.__input_values
+        if driver_params is not None and input_values is not None:
+            self.__stats.start_timer(Qubot.STAT_CONSTRUCT_UI_TREE_TIME)
+            self.__driver = Driver(self.__input_values, use_cache=self.__driver_info.use_cache)
+            self.__tree = self.__driver.construct_tree(self.__url_to_test, deep=True,
+                                                       max_urls_to_visit=self.__driver_info.max_urls)
+            self.__stats.stop_timer(Qubot.STAT_CONSTRUCT_UI_TREE_TIME)
+
+    def set_model_config(self, model_params: Optional[QubotConfigModelParameters] = None, reward_func: Optional[QubotPresetRewardFunc] = None):
+        self.__model_info = model_params if model_params is not None else self.__model_info
+        self.__reward_func = reward_func if reward_func is not None else self.__reward_func
+        if model_params is not None and reward_func is not None:
+            self.__env = QLearningEnvironment(
+                self.__tree,
+                self.__reward_func,
+                self.__model_info.alpha,
+                self.__model_info.gamma,
+                self.__model_info.epsilon,
+                self.__model_info.decay,
+                self.__model_info.step_limit
+            )
 
     @staticmethod
     def from_file(file_path: str):
