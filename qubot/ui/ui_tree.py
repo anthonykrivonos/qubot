@@ -18,6 +18,7 @@ class UITreeNode:
         self.__id = self.__element.id
         self.__tag_name = self.__element.tag_name
         self.__content = self.__element.get_attribute('outerHTML')
+        self.__inner_content = self.__element.get_attribute('innerHTML')
         self.__html_id = self.__element.get_attribute("id")
         self.__html_class = self.__element.get_attribute("class")
         self.__hash = sha256(self.__content.encode('utf-8')).hexdigest()
@@ -97,7 +98,7 @@ class UITreeNode:
         self.__visit_count = visit_count
 
     def __str__(self):
-        return "<%s id=\"%s\" class=\"%s\"> (%s)" % (self.__tag_name, self.__html_id, self.__html_class, self.__id)
+        return "<%s id=\"%s\" class=\"%s\">%s (%s)" % (self.__tag_name, self.__html_id, self.__html_class, ("%s</%s>" % (self.__inner_content, self.__tag_name)) if self.__inner_content else "", self.__id)
 
 
 class UITree:

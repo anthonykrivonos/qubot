@@ -54,10 +54,7 @@ def generate_input(element: FirefoxWebElement, overrides: Dict[str, str] = None)
         for input_type in overrides:
             values[input_type.lower()] = overrides[input_type]
 
-    if not is_generatable_input(element):
-        return None
-
-    if element.tag_name == "textarea":
+    if not is_generatable_input(element) or element.tag_name == "textarea":
         return values["text"]
 
     return values[element.get_attribute("type").lower()]

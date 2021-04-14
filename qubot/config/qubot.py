@@ -11,6 +11,7 @@ from qubot.driver.driver import Driver
 from qubot.config.preset_rewards import QubotPresetRewardFunc, int_to_reward_func, str_to_reward_func
 from qubot.stats.stats import Stats
 from qubot.utils.io import read_json
+from qubot.ui.ui_tree import UITree
 
 class Qubot:
 
@@ -75,6 +76,9 @@ class Qubot:
 
     def get_stats(self) -> Stats:
         return self.__stats.merge(self.__driver.get_stats().merge(self.__env.get_stats()))
+
+    def get_tree(self) -> UITree:
+        return self.__tree
 
     def __set_terminal_nodes(self, is_training=False):
         training_func = self.__tree.set_terminal_node if is_training else self.__tree.unset_terminal_node

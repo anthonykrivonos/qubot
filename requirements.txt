@@ -1,5 +1,6 @@
-numpy                       >= 1.20.1
+numpy                       >= 1.20.2
 gym                         >= 0.18.0
 selenium                    >= 3.141.0
 Pillow                      == 6.2.2
 geckodriver-autoinstaller   == 0.1.0
+timeout-decorator           == 0.5.0

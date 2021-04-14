@@ -14,7 +14,7 @@ def inline_try(func: Callable) -> Optional[Exception]:
     except Exception as e:
         return e
 
-def try_again_on_fail(func: Callable, sleep_s: int = 0, max_retries: int = 0, on_fail: Callable = None):
+def try_again_on_fail(func: Callable, sleep_s: int = 0, max_retries: int = 0, on_fail: Callable = None) -> Optional[Exception]:
     """
     Recursively tries to execute the inline function until it succeeds.
     :param func: A function to call.
@@ -32,4 +32,5 @@ def try_again_on_fail(func: Callable, sleep_s: int = 0, max_retries: int = 0, on
         if max_retries > 0:
             try_again_on_fail(func, sleep_s, max_retries - 1)
         else:
-            raise e
+            return e
+    return None

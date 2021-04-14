@@ -5,6 +5,7 @@ from sys import path
 from os import getcwd
 from os.path import join, dirname
 import geckodriver_autoinstaller
+import timeout_decorator
 path.append(join(dirname(__file__), '../../..'))
 
 from qubot.ui.ui_action import UIAction
@@ -87,7 +88,7 @@ class Driver:
         tree = UITree(root)
 
         def visit_dfs(action: UIAction, node: UITreeNode, driver: Driver):
-            if node.get_id() in visited_nodes:
+            if len(visited_urls) > max_urls_to_visit:
                 return
 
             self.__stats.record(Driver.STAT_ELEMENTS_ENCOUNTERED, str(node))
@@ -95,12 +96,14 @@ class Driver:
             visited_nodes.add(node.get_id())
 
             if not deep or action == UIAction.NAVIGATE:
-                child_tags = node.get_element().find_elements_by_css_selector("*")
+                child_tags = node.get_element().find_elements_by_xpath("./*")
                 for child_tag in child_tags:
                     node.add_transition(child_tag)
                 for act, child in node.get_transition_tuples():
-                    visit_dfs(act, child, driver)
+                    if child.get_id() not in visited_nodes:
+                        visit_dfs(act, child, driver)
             else:
+                @timeout_decorator.timeout(10, timeout_exception=StopIteration)
                 def visit_new_page():
                     sub_driver = Driver()
                     sub_driver.open(driver.__driver.current_url)
@@ -120,23 +123,25 @@ class Driver:
                         self.__stats.record(Driver.STAT_URLS_VISITED, sub_driver.__driver.current_url)
                         visited_urls.add(sub_driver.__driver.current_url)
 
-                        sub_child_tags = sub_html_tag.find_elements_by_css_selector("*")
+                        sub_child_tags = sub_html_tag.find_elements_by_xpath("./*")
                         for sub_child_tag in sub_child_tags:
                             node.add_transition(sub_child_tag)
                         for sub_act, sub_child in node.get_transition_tuples():
-                            visit_dfs(sub_act, sub_child, sub_driver)
+                            if sub_child.get_id() not in visited_nodes:
+                                visit_dfs(sub_act, sub_child, sub_driver)
 
                     del sub_driver
 
-                def on_fail():
+                def on_fail(e):
                     self.__stats.record(Driver.STAT_CRASH_DETECTED, {
                         "on_action": action.name,
-                        "element": str(node)
+                        "element": str(node),
+                        "error": str(e),
                     })
 
-                try_again_on_fail(visit_new_page, 10, 10, on_fail)
+                try_again_on_fail(visit_new_page, 5, 5, on_fail)
 
-        visit_dfs(UIAction.NAVIGATE, root, self)
+        inline_try(lambda: visit_dfs(UIAction.NAVIGATE, root, self))
 
         return tree
 
